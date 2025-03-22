@@ -1,0 +1,46 @@
+name: Helm Deploy
+
+on:
+  push:
+    paths:
+      - "terraform/modules/helm/**"
+      - ".github/workflows/helm-deploy.yml"
+
+jobs:
+  helm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Kubeconfig
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name log-analytics-cluster --region us-west-2
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.13.0
+
+      - name: Deploy Helm Charts
+        working-directory: terraform/modules/helm
+        run: |
+          helm dependency update
+          helm upgrade --install kafka bitnami/kafka -f kafka-values.yaml --namespace logging --create-namespace
+          helm upgrade --install elasticsearch elastic/elasticsearch -f elasticsearch-values.yaml --namespace logging
+          helm upgrade --install kibana elastic/kibana -f kibana-values.yaml --namespace logging
+          helm upgrade --install logstash elastic/logstash -f logstash-values.yaml --namespace logging
+          helm upgrade --install grafana grafana/grafana -f grafana-values.yaml --namespace logging
