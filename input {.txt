@@ -1,0 +1,18 @@
+input {
+  kafka {
+    bootstrap_servers => "kafka:9092"
+    topics => ["app-logs"]
+    group_id => "logstash"
+  }
+}
+filter {
+  json {
+    source => "message"
+  }
+}
+output {
+  elasticsearch {
+    hosts => ["http://elasticsearch:9200"]
+    index => "logs-%{+YYYY.MM.dd}"
+  }
+}

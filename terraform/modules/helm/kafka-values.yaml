@@ -1,0 +1,7 @@
+replicaCount: 1
+zookeeper:
+  replicaCount: 1
+autoCreateTopicsEnable: true
+listeners:
+  client:
+    protocol: PLAINTEXT
